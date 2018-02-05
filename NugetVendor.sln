@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugetVendor", "NugetVendor\NugetVendor.csproj", "{3C50BAFB-7A56-4A62-9252-AA51A0B86200}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugetVendor.Tests", "NugetVendor.Tests\NugetVendor.Tests.csproj", "{7FDA7C9C-473E-4374-A049-525B6F782C36}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C50BAFB-7A56-4A62-9252-AA51A0B86200}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C50BAFB-7A56-4A62-9252-AA51A0B86200}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C50BAFB-7A56-4A62-9252-AA51A0B86200}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C50BAFB-7A56-4A62-9252-AA51A0B86200}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FDA7C9C-473E-4374-A049-525B6F782C36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FDA7C9C-473E-4374-A049-525B6F782C36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FDA7C9C-473E-4374-A049-525B6F782C36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FDA7C9C-473E-4374-A049-525B6F782C36}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D91AAECD-BF34-4378-8333-C6CE02A36662}
+	EndGlobalSection
+EndGlobal
