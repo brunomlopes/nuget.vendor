@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NuGet.Common;
 using NuGet.Configuration;
+using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
@@ -21,6 +23,7 @@ namespace NugetVendor
         private Dictionary<string, SourceRepository> _sources;
         private Dictionary<string, IEnumerable<PackageIdentity>> _packageIdentitiesBySourceName;
         private readonly SourceCacheContext _sourceCacheContext = new SourceCacheContext();
+        private bool _forceRefresh;
 
         public ResolveEngine()
         {
@@ -28,6 +31,12 @@ namespace NugetVendor
                 .Provider
                 .GetCoreV3()
                 .ToList();
+        }
+
+        public ResolveEngine ForceRefresh()
+        {
+            _forceRefresh = true;
+            return this;
         }
 
         public void Initialize(ParsedVendorDependencies vendorDependencies)
@@ -50,12 +59,18 @@ namespace NugetVendor
         public async Task RunAsync(ILocalBaseFolder localBaseFolder)
         {
             var cancelationToken = new CancellationToken();
-            _packageIdentitiesBySourceName
-                .AsParallel()
-                .ForAll(group =>
-                {
-                    DownloadVendorsFromSourceName(localBaseFolder, @group, cancelationToken).Wait(cancelationToken);
-                });
+            //_packageIdentitiesBySourceName
+            //    .AsParallel()
+            //    .ForAll(group =>
+            //    {
+            //        DownloadVendorsFromSourceName(localBaseFolder, @group, cancelationToken).Wait(cancelationToken);
+            //    });
+            foreach (var packagesBySourceName in _packageIdentitiesBySourceName)
+            {
+                await DownloadVendorsFromSourceName(localBaseFolder, packagesBySourceName, cancelationToken);
+                
+            }
+          
         }
 
         private async Task DownloadVendorsFromSourceName(ILocalBaseFolder localBaseFolder, KeyValuePair<string, IEnumerable<PackageIdentity>> @group,
@@ -74,7 +89,7 @@ namespace NugetVendor
             var descriptionPath = $@"{package.Id}\vendor.dependency.description.json";
             VendorDependencyDescription description;
 
-            if (localBaseFolder.ContainsFolder(package.Id))
+            if (!_forceRefresh && localBaseFolder.ContainsFolder(package.Id))
             {
                 var content = await localBaseFolder.FileContentOrEmptyAsync(
                     descriptionPath,
@@ -91,7 +106,7 @@ namespace NugetVendor
                         description = new VendorDependencyDescription {Version = ""};
                     }
 
-                    if (package.Version.ToFullString() == description.Version)
+                    if ( package.Version.ToFullString() == description.Version)
                     {
                         return;
                     }
@@ -101,7 +116,7 @@ namespace NugetVendor
             
             using (var descriptionStream = localBaseFolder.OpenStreamForWriting(descriptionPath))
             {
-                description = new VendorDependencyDescription()
+                description = new VendorDependencyDescription
                 {
                     Version = package.Version.ToFullString()
                 };
@@ -125,6 +140,21 @@ namespace NugetVendor
                     _sourceCacheContext,
                     NullLogger.Instance, new CancellationToken()
                 );
+            }
+            
+            using (var stream = localBaseFolder.OpenStreamForReading($@"{package.Id}\{package}.nupkg"))
+            using (var compressed = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                foreach (var zipArchiveEntry in compressed.Entries)
+                {
+                    if (zipArchiveEntry.FullName.StartsWith("_rels") || zipArchiveEntry.Name == "[Content_Types].xml") continue;
+                    
+                    using (var fileStream = zipArchiveEntry.Open())
+                    using (var outputStream = localBaseFolder.OpenStreamForWriting($@"{package.Id}\{zipArchiveEntry}"))
+                    {
+                        await fileStream.CopyToAsync(outputStream);
+                    }
+                };
             }
         }
     }

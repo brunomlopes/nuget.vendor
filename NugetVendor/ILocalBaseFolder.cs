@@ -9,5 +9,6 @@ namespace NugetVendor
         bool ContainsFolder(string folderName);
         Task<string> FileContentOrEmptyAsync(string filePath, CancellationToken cancelationToken);
         Stream OpenStreamForWriting(string path);
+        Stream OpenStreamForReading(string path);
     }
 }

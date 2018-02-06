@@ -20,6 +20,11 @@ namespace NugetVendor
             CommandOption vendorsCommand = commandLineApplication.Option(
                 "--vendors", "File with vendor dependencies.",
                 CommandOptionType.SingleValue);
+
+            CommandOption forceRefreshCommand = commandLineApplication.Option(
+                "--force", "Force refresh.",
+                CommandOptionType.NoValue);
+
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.OnExecute(() =>
             {
@@ -56,9 +61,17 @@ namespace NugetVendor
                     var parsedVendors = new VendorDependenciesReader(input)
                         .ReadAsync()
                         .Result;
+                    parsedVendors.Validate();
 
                     var engine = new ResolveEngine();
                     engine.Initialize(parsedVendors);
+                    if (forceRefreshCommand.HasValue())
+                    {
+                        Console.WriteLine($"Forcing a refresh", Color.Yellow);
+
+                        engine.ForceRefresh();
+                    }
+
                     engine.RunAsync(new LocalBaseFolder(folderFullPath)).Wait();
                 }
 

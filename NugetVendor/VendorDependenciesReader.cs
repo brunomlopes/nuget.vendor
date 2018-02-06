@@ -87,8 +87,8 @@ namespace NugetVendor
         {
             _stream = stream;
         }
-        
-        private static readonly Parser<string> LineType = Parse.Letter.AtLeastOnce().Text().Token();
+
+        private static readonly Parser<string> SourcePrefix = Parse.String("source").Text().Token();
 
         private static char[] sourceNameExtraChars = {'-', '_','.'};
 
@@ -98,11 +98,11 @@ namespace NugetVendor
 
         private static char[] urlExtraChars = "://.-_?@&".Select(c => c).ToArray();
         private static readonly Parser<string> Url  = 
-            Parse.Letter.Or(Parse.Chars(urlExtraChars))
+            Parse.LetterOrDigit.Or(Parse.Chars(urlExtraChars))
             .AtLeastOnce().Text().Token();
         
         private static readonly Parser<Source> SourceParser =
-            from id in LineType
+            from id in SourcePrefix
             from name in SourceName
             from url in Url
             select new Source()
@@ -123,7 +123,7 @@ namespace NugetVendor
             .Many()
             .Select(parts => string.Join("", parts));
 
-        private static readonly Parser<string> PackageIdentifier = Parse.Letter.Or(Parse.Numeric).Or(Parse.Char('.'))
+        private static readonly Parser<string> PackageIdentifier = Parse.Letter.Or(Parse.Numeric).Or(Parse.Chars('.','-'))
             .AtLeastOnce().Text().Token();
 
         private static readonly Parser<Package> PackageParser =

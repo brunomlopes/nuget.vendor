@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -60,6 +57,17 @@ proget InnovationCast.Analyzers 1.0.0.12-branch-423
 
 
         [Fact]
+        public void PackageIdCanContainDash()
+        {
+            Parse(@"
+proget Redis-64 1.0.0.12-branch-423
+");
+
+            _parsedVendor.Packages.Select(s => s.PackageId).ShouldContain("Redis-64");
+        }
+
+
+        [Fact]
         public void CanReadSourceAndPackage()
         {
             Parse(@"
@@ -111,6 +119,25 @@ non-existing-source InnovationCast.Analyzers 1.0.0.12 # this is another comment
         }
 
         [Fact]
+        public void UrlCanBeNuget()
+        {
+            Parse(@"
+source proget https://proget.hq.welisten.eu/nuget/ic-public/
+source nuget https://api.nuget.org/v3/index.json
+
+proget PostgreSQL.Server 9.3.4.3
+proget dbdeploy.net  2.2.0.3
+proget nodejs 4.4.2
+nuget Npgsql 3.1.7
+nuget Redis-64 2.8.4
+nuget RavenDB.Server 3.5.5-patch-35246
+");
+            
+            _parsedVendor.Sources.Select(s => s.Name).ShouldContain("nuget");
+            _parsedVendor.Sources.Select(s => s.Url).ShouldContain("https://api.nuget.org/v3/index.json");
+        }
+
+        [Fact]
         public void CommentsAreIgnored()
         {
             Parse(@"
@@ -152,10 +179,34 @@ proget InnovationCast.Analyzers 1.0.0.12
             var content = await inMemoryLocalBaseFolder.FileContentOrEmptyAsync(
                 @"InnovationCast.Analyzers\vendor.dependency.description.json", new CancellationToken());
 
-
+            content.ShouldNotBeNullOrWhiteSpace();
             JsonConvert.DeserializeObject<SomethingWithVersion>(content).Version.ShouldBe("1.0.0.12");
 
             inMemoryLocalBaseFolder.ContainsPath(@"InnovationCast.Analyzers\InnovationCast.Analyzers.1.0.0.12.nupkg").ShouldBeTrue();
+            inMemoryLocalBaseFolder.ContainsPath(@"InnovationCast.Analyzers\tools\install.ps1").ShouldBeTrue();
+            inMemoryLocalBaseFolder.ContainsPath(@"InnovationCast.Analyzers\_rels\.rels").ShouldBeFalse("Skip internal nuget folders");
+            inMemoryLocalBaseFolder.ContainsPath(@"InnovationCast.Analyzers\[Content_Types].xml").ShouldBeFalse("Skip internal nuget folders");
+        }
+
+        [Fact]
+        public async Task FullTest()
+        {
+            Parse(@"
+source proget https://proget.hq.welisten.eu/nuget/ic-public/
+source nuget https://api.nuget.org/v3/index.json
+
+proget PostgreSQL.Server 9.3.4.3
+proget dbdeploy.net  2.2.0.3
+proget nodejs 4.4.2
+nuget Npgsql 3.1.7
+nuget Redis-64 2.8.4
+nuget RavenDB.Server 3.5.5-patch-35246
+");
+
+            var e = new ResolveEngine();
+            e.Initialize(_parsedVendor);
+            var inMemoryLocalBaseFolder = new InMemoryLocalBaseFolder();
+            await e.RunAsync(inMemoryLocalBaseFolder);
         }
 
         class SomethingWithVersion
@@ -163,139 +214,10 @@ proget InnovationCast.Analyzers 1.0.0.12
             public string Version { get; set; }
         }
 
-        
         private void Parse(string fileContent)
         {
             var reader = new VendorDependenciesReader(new StringReader(fileContent));
             _parsedVendor = reader.ReadAsync().Result;
-        }
-    }
-
-    class InMemoryLocalBaseFolder : ILocalBaseFolder
-    {
-        class InMemoryFolder
-        {
-            public IDictionary<string, InMemoryFolder> Children = new Dictionary<string, InMemoryFolder>();
-            public IDictionary<string, byte[]> Files =new Dictionary<string, byte[]>();
-        }
-
-        private InMemoryFolder Root = new InMemoryFolder();
-
-        public bool ContainsFolder(string folderName)
-        {
-            return Root.Children.ContainsKey(folderName);
-        }
-
-        public async Task<string> FileContentOrEmptyAsync(string filePath, CancellationToken cancelationToken)
-        {
-            var now = Root;
-            var path = Path.GetDirectoryName(filePath);
-            var fileName = Path.GetFileName(filePath);
-            foreach (var part in path.Split(Path.PathSeparator))
-            {
-                if (now.Children.ContainsKey(part)) now = now.Children[part];
-                else return string.Empty;
-            }
-
-            if (now.Files.ContainsKey(fileName))
-            {
-                return Encoding.UTF8.GetString(now.Files[fileName]);
-            }
-
-            return string.Empty;
-        }
-
-        public bool ContainsPath(string filePath)
-        {
-            var now = Root;
-            var path = Path.GetDirectoryName(filePath);
-            var fileName = Path.GetFileName(filePath);
-            foreach (var part in path.Split(Path.PathSeparator))
-            {
-                if (now.Children.ContainsKey(part)) now = now.Children[part];
-                else return false;
-            }
-
-            return (now.Files.ContainsKey(fileName));
-        }
-
-        public Stream OpenStreamForWriting(string filePath)
-        {
-            var now = Root;
-            var path = Path.GetDirectoryName(filePath);
-            var fileName = Path.GetFileName(filePath);
-            foreach (var part in path.Split(Path.PathSeparator))
-            {
-                if (now.Children.ContainsKey(part)) now = now.Children[part];
-                else now = (now.Children[part] = new InMemoryFolder());
-            }
-            return new InMemoryCallbackStringStream(bytes => now.Files[fileName] = bytes);
-        }
-    }
-
-    class InMemoryCallbackStringStream : Stream
-    {
-        private Action<byte[]> _callback;
-        private MemoryStream _stream;
-
-        public InMemoryCallbackStringStream(Action<byte[]> callback)
-        {
-            _callback = callback;
-            _stream = new MemoryStream();
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _callback?.Invoke(_stream?.GetBuffer());
-                _stream?.Dispose();
-
-                _callback = null;
-                _stream = null;
-            }
-            
-            base.Dispose(disposing);
-        }
-
-        public override void Flush()
-        {
-            _callback?.Invoke(_stream.GetBuffer());
-            _stream.Flush();
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return _stream.Read(buffer, offset, count);
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return _stream.Seek(offset, origin);
-        }
-
-        public override void SetLength(long value)
-        {
-            _stream.SetLength(value);
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            _stream.Write(buffer, offset, count);
-        }
-
-        public override bool CanRead => _stream.CanRead;
-
-        public override bool CanSeek => _stream.CanSeek;
-
-        public override bool CanWrite => _stream.CanWrite;
-
-        public override long Length => _stream.Length;
-
-        public override long Position
-        {
-            get => _stream.Position;
-            set => _stream.Position = value;
         }
     }
 }

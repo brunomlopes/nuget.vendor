@@ -37,5 +37,11 @@ namespace NugetVendor
             if(File.Exists(fullPath)) File.Delete(fullPath);
             return File.OpenWrite(fullPath);
         }
+
+        public Stream OpenStreamForReading(string filePath)
+        {
+            var fullPath = Path.Combine(_baseDir.FullName, filePath);
+            return File.OpenRead(fullPath);
+        }
     }
 }
