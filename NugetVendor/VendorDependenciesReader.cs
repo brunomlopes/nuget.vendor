@@ -142,7 +142,7 @@ namespace NugetVendor
             from restOfLine in Parse.AnyChar.Many().Text()
             select commentStart + restOfLine;
 
-        public async Task<ParsedVendorDependencies> Read()
+        public async Task<ParsedVendorDependencies> ReadAsync()
         {
             string line;
             var sources = new List<Source>();

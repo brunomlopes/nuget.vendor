@@ -126,7 +126,7 @@ proget InnovationCast.Analyzers 1.0.0.12
         private void Parse(string fileContent)
         {
             var reader = new VendorDependenciesReader(new StringReader(fileContent));
-            _parsedVendor = reader.Read().Result;
+            _parsedVendor = reader.ReadAsync().Result;
         }
     }
 
@@ -135,7 +135,7 @@ proget InnovationCast.Analyzers 1.0.0.12
         private ParsedVendorDependencies _parsedVendor;
 
         [Fact]
-        public async Task Scratch()
+        public async Task CanFetchOnePackage()
         {
             
             Parse(@"
@@ -153,8 +153,7 @@ proget InnovationCast.Analyzers 1.0.0.12
                 @"InnovationCast.Analyzers\vendor.dependency.description.json", new CancellationToken());
 
 
-            var v = JsonConvert.DeserializeObject<SomethingWithVersion>(content);
-            v.Version.ShouldBe("1.0.0.12");
+            JsonConvert.DeserializeObject<SomethingWithVersion>(content).Version.ShouldBe("1.0.0.12");
 
             inMemoryLocalBaseFolder.ContainsPath(@"InnovationCast.Analyzers\InnovationCast.Analyzers.1.0.0.12.nupkg").ShouldBeTrue();
         }
@@ -168,7 +167,7 @@ proget InnovationCast.Analyzers 1.0.0.12
         private void Parse(string fileContent)
         {
             var reader = new VendorDependenciesReader(new StringReader(fileContent));
-            _parsedVendor = reader.Read().Result;
+            _parsedVendor = reader.ReadAsync().Result;
         }
     }
 
