@@ -1,84 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Sprache;
 
 namespace NugetVendor
 {
-    public class VendorDependenciesException : Exception
-    {
-        public VendorDependenciesException()
-        {
-        }
-
-        public VendorDependenciesException(string message) : base(message)
-        {
-        }
-
-        public VendorDependenciesException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected VendorDependenciesException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-    }
-
-    public class ParsedVendorDependencies
-    {
-        public Source[] Sources { get; set; }
-        public Package[] Packages { get; set; }
-
-        public void Validate()
-        {
-            var errors = Errors().ToList();
-            if (errors.Any())
-                throw new VendorDependenciesException(string.Join("\n", errors));
-        }
-
-        private IEnumerable<string> Errors()
-        {
-            var missingSources = new List<(string packageId, string sourceName)>();
-
-            var sourceById = Sources.ToDictionary(s => s.Name);
-            foreach (var package in Packages)
-            {
-                if (!sourceById.ContainsKey(package.SourceName))
-                {
-                    missingSources.Add((package.PackageId, package.SourceName));
-                }
-            }
-
-            if (missingSources.Any())
-            {
-                foreach (var missingSource in missingSources)
-                {
-                    yield return
-                        $"Missing source '{missingSource.sourceName}' referenced by '{missingSource.packageId}'";
-                }
-
-                yield return $"Existing sources: '{string.Join(", ", sourceById.Keys)}'";
-            }
-        }
-    }
-
-    public class Package
-    {
-        public string SourceName { get; set; }
-        public string PackageId { get; set; }
-        public string PackageVersion { get; set; }
-        public string OutputFolder { get; set; }
-    }
-
-    public class Source
-    {
-        public string Name { get; set; }
-        public string Url { get; set; }
-    }
-
     public class VendorDependenciesReader
     {
         private readonly TextReader _stream;
