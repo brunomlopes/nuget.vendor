@@ -257,10 +257,10 @@ namespace NugetVendor.Resolver
                 localBaseFolder.OpenStreamForReading($@"{info.Package.OutputFolder}\{info.Identity}.nupkg"))
             using (var compressed = new ZipArchive(stream, ZipArchiveMode.Read))
             {
+                var totalCount = compressed.Entries.Count;
                 foreach (var (zipArchiveEntry, i) in compressed.Entries.Select((e, i) => (e, i)))
                 {
-                    listeners(new Decompressing(info.Package, info.Source, zipArchiveEntry.FullName, i,
-                        compressed.Entries.Count));
+                    listeners(new Decompressing(info.Package, info.Source, zipArchiveEntry.FullName, i, totalCount));
 
                     if (zipArchiveEntry.FullName.StartsWith("_rels") ||
                         zipArchiveEntry.Name == "[Content_Types].xml") continue;
