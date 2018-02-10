@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace NugetVendor
+namespace NugetVendor.VendorDependenciesReader
 {
     public class ParsedVendorDependencies
     {

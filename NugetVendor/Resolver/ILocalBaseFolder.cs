@@ -2,7 +2,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NugetVendor
+namespace NugetVendor.Resolver
 {
     public interface ILocalBaseFolder
     {

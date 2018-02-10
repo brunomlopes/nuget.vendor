@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Sprache;
 
-namespace NugetVendor
+namespace NugetVendor.VendorDependenciesReader
 {
     public class VendorDependenciesReader
     {

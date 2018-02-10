@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace NugetVendor
+namespace NugetVendor.VendorDependenciesReader
 {
     public class VendorDependenciesException : Exception
     {

@@ -2,6 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using NugetVendor.Resolver;
+using NugetVendor.VendorDependenciesReader;
 using Shouldly;
 using Xunit;
 
@@ -93,7 +95,7 @@ nuget RavenDB.Server 3.5.5-patch-35246
 
         private void Parse(string fileContent)
         {
-            var reader = new VendorDependenciesReader(new StringReader(fileContent));
+            var reader = new VendorDependenciesReader.VendorDependenciesReader(new StringReader(fileContent));
             _parsedVendor = reader.ReadAsync().Result;
         }
     }

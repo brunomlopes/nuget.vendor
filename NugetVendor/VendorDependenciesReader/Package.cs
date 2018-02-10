@@ -1,4 +1,4 @@
-﻿namespace NugetVendor
+﻿namespace NugetVendor.VendorDependenciesReader
 {
     public class Package
     {

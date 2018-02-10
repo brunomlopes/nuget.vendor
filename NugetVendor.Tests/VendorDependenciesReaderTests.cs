@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using NugetVendor.VendorDependenciesReader;
 using Shouldly;
 using Xunit;
 
@@ -167,7 +168,7 @@ proget InnovationCast.Analyzers 1.0.0.12
 
         private void Parse(string fileContent)
         {
-            var reader = new VendorDependenciesReader(new StringReader(fileContent));
+            var reader = new VendorDependenciesReader.VendorDependenciesReader(new StringReader(fileContent));
             _parsedVendor = reader.ReadAsync().Result;
         }
     }
