@@ -21,7 +21,7 @@ namespace NugetVendor.Tests
             return Root.Children.ContainsKey(folderName);
         }
 
-        public async Task<string> FileContentOrEmptyAsync(string filePath, CancellationToken cancelationToken)
+        public Task<string> FileContentOrEmptyAsync(string filePath, CancellationToken cancelationToken)
         {
             var now = Root;
             var path = Path.GetDirectoryName(filePath);
@@ -29,15 +29,15 @@ namespace NugetVendor.Tests
             foreach (var part in path.Split(Path.PathSeparator))
             {
                 if (now.Children.ContainsKey(part)) now = now.Children[part];
-                else return string.Empty;
+                else return Task.FromResult(string.Empty);
             }
 
             if (now.Files.ContainsKey(fileName))
             {
-                return Encoding.UTF8.GetString(now.Files[fileName]);
+                return Task.FromResult(Encoding.UTF8.GetString(now.Files[fileName]));
             }
 
-            return string.Empty;
+            return Task.FromResult(string.Empty);
         }
 
         public bool ContainsPath(string filePath)

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -68,15 +67,16 @@ namespace NugetVendor
 
     public class Package
     {
-         public string SourceName { get; set; }
-         public string PackageId { get; set; }
-         public string PackageVersion { get; set; }
+        public string SourceName { get; set; }
+        public string PackageId { get; set; }
+        public string PackageVersion { get; set; }
+        public string OutputFolder { get; set; }
     }
 
     public class Source
     {
-        public string Name { get;  set; }
-        public string Url { get;  set; }
+        public string Name { get; set; }
+        public string Url { get; set; }
     }
 
     public class VendorDependenciesReader
@@ -90,51 +90,63 @@ namespace NugetVendor
 
         private static readonly Parser<string> SourcePrefix = Parse.String("source").Text().Token();
 
-        private static char[] sourceNameExtraChars = {'-', '_','.'};
+        private static char[] sourceNameExtraChars = {'-', '_', '.'};
 
         private static readonly Parser<string> SourceName =
             Parse.Letter.Or(Parse.Chars(sourceNameExtraChars))
                 .AtLeastOnce().Text().Token();
 
         private static char[] urlExtraChars = "://.-_?@&".Select(c => c).ToArray();
-        private static readonly Parser<string> Url  = 
+
+        private static readonly Parser<string> Url =
             Parse.LetterOrDigit.Or(Parse.Chars(urlExtraChars))
-            .AtLeastOnce().Text().Token();
+                .AtLeastOnce().Text().Token();
+
+
+
         
+
         private static readonly Parser<Source> SourceParser =
             from id in SourcePrefix
             from name in SourceName
             from url in Url
-            select new Source()
+            select new Source
             {
-                Name = name, 
+                Name = name,
                 Url = url
             };
-
+        
+        private static readonly Parser<string> PackageIdentifier = Parse.Letter.Or(Parse.Numeric)
+            .Or(Parse.Chars('.', '-'))
+            .AtLeastOnce().Text().Token();
 
         private static readonly Parser<string> Version = Parse.Number
             .Or(from dot in Parse.Char('.')
-                    from number in Parse.Number
-                    select dot+number).Text()
+                from number in Parse.Number
+                select dot + number).Text()
             .Or(from dot in Parse.Char('-')
-                    from number in Parse.LetterOrDigit.AtLeastOnce().Text()
-                    select dot+number).Text()
+                from number in Parse.LetterOrDigit.AtLeastOnce().Text()
+                select dot + number).Text()
             .Text()
             .Many()
             .Select(parts => string.Join("", parts));
 
-        private static readonly Parser<string> PackageIdentifier = Parse.Letter.Or(Parse.Numeric).Or(Parse.Chars('.','-'))
-            .AtLeastOnce().Text().Token();
+        private static readonly Parser<string> ExplicitOutputFolder =
+            from @into in Parse.String("into").Token()
+            from outputFolder in PackageIdentifier.Token().Text()
+            select outputFolder;
 
         private static readonly Parser<Package> PackageParser =
             from name in SourceName
             from id in PackageIdentifier
             from version in Version
-            select new Package()
+            from optional in ExplicitOutputFolder.Optional()
+            select new Package
             {
                 SourceName = name,
                 PackageId = id,
-                PackageVersion = version
+                PackageVersion = version,
+                OutputFolder = optional.GetOrDefault() ?? id
             };
 
         private static readonly Parser<string> Comment
@@ -164,13 +176,14 @@ namespace NugetVendor
                         sources.Add(s);
                         break;
                 }
-            };
+            }
+
+            ;
             return new ParsedVendorDependencies
             {
                 Sources = sources.ToArray(),
                 Packages = packages.ToArray()
             };
         }
-
     }
 }

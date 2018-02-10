@@ -21,7 +21,7 @@ namespace NugetVendor
         private ParsedVendorDependencies _vendorDependencies;
         private readonly List<Lazy<INuGetResourceProvider>> _providers;
         private Dictionary<string, SourceRepository> _sources;
-        private Dictionary<string, IEnumerable<PackageIdentity>> _packageIdentitiesBySourceName;
+        private Dictionary<string, IEnumerable<InternalPackageInformation>> _packageIdentitiesBySourceName;
         private readonly SourceCacheContext _sourceCacheContext = new SourceCacheContext();
         private bool _forceRefresh;
 
@@ -39,6 +39,11 @@ namespace NugetVendor
             return this;
         }
 
+        class InternalPackageInformation
+        {
+            public string OutputFolder { get; set; }
+            public PackageIdentity Identity { get;set; }
+        }
         public void Initialize(ParsedVendorDependencies vendorDependencies)
         {
             _vendorDependencies = vendorDependencies;
@@ -48,7 +53,11 @@ namespace NugetVendor
             _packageIdentitiesBySourceName = _vendorDependencies.Packages
                 .GroupBy(p => p.SourceName)
                 .ToDictionary(g => g.Key,
-                    g => g.Select(p => new PackageIdentity(p.PackageId, NuGetVersion.Parse(p.PackageVersion))));
+                    g => g.Select(p => new InternalPackageInformation()
+                    {
+                        OutputFolder = p.OutputFolder,
+                        Identity = new PackageIdentity(p.PackageId, NuGetVersion.Parse(p.PackageVersion))
+                    }));
         }
 
         public class VendorDependencyDescription
@@ -59,21 +68,14 @@ namespace NugetVendor
         public async Task RunAsync(ILocalBaseFolder localBaseFolder)
         {
             var cancelationToken = new CancellationToken();
-            //_packageIdentitiesBySourceName
-            //    .AsParallel()
-            //    .ForAll(group =>
-            //    {
-            //        DownloadVendorsFromSourceName(localBaseFolder, @group, cancelationToken).Wait(cancelationToken);
-            //    });
-            foreach (var packagesBySourceName in _packageIdentitiesBySourceName)
-            {
-                await DownloadVendorsFromSourceName(localBaseFolder, packagesBySourceName, cancelationToken);
-                
-            }
-          
+            var runningTasks = _packageIdentitiesBySourceName
+                .Select(group => DownloadVendorsFromSourceName(localBaseFolder, @group, cancelationToken))
+                .ToArray();
+
+            await Task.WhenAll(runningTasks);
         }
 
-        private async Task DownloadVendorsFromSourceName(ILocalBaseFolder localBaseFolder, KeyValuePair<string, IEnumerable<PackageIdentity>> @group,
+        private async Task DownloadVendorsFromSourceName(ILocalBaseFolder localBaseFolder, KeyValuePair<string, IEnumerable<InternalPackageInformation>> @group,
             CancellationToken cancelationToken)
         {
             foreach (var package in @group.Value)
@@ -83,13 +85,14 @@ namespace NugetVendor
         }
 
         private async Task DownloadPackage(ILocalBaseFolder localBaseFolder, 
-            KeyValuePair<string, IEnumerable<PackageIdentity>> @group,
-            CancellationToken cancelationToken, PackageIdentity package)
+            KeyValuePair<string, IEnumerable<InternalPackageInformation>> @group,
+            CancellationToken cancelationToken, InternalPackageInformation info)
         {
-            var descriptionPath = $@"{package.Id}\vendor.dependency.description.json";
+            
+            var descriptionPath = $@"{info.OutputFolder}\vendor.dependency.description.json";
             VendorDependencyDescription description;
 
-            if (!_forceRefresh && localBaseFolder.ContainsFolder(package.Id))
+            if (!_forceRefresh && localBaseFolder.ContainsFolder(info.OutputFolder))
             {
                 var content = await localBaseFolder.FileContentOrEmptyAsync(
                     descriptionPath,
@@ -100,25 +103,25 @@ namespace NugetVendor
                     {
                         description = JsonConvert.DeserializeObject<VendorDependencyDescription>(content);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         // TODO : log this error
                         description = new VendorDependencyDescription {Version = ""};
                     }
 
-                    if ( package.Version.ToFullString() == description.Version)
+                    if ( info.Identity.Version.ToFullString() == description.Version)
                     {
                         return;
                     }
                 }
             }
-            await Download(@group.Key, package, localBaseFolder, cancelationToken);
+            await Download(@group.Key, info, localBaseFolder, cancelationToken);
             
             using (var descriptionStream = localBaseFolder.OpenStreamForWriting(descriptionPath))
             {
                 description = new VendorDependencyDescription
                 {
-                    Version = package.Version.ToFullString()
+                    Version = info.Identity.Version.ToFullString()
                 };
                 var serialized = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(description, Formatting.Indented));
 
@@ -126,23 +129,23 @@ namespace NugetVendor
             }
         }
 
-        private async Task Download(string sourceName, PackageIdentity package, ILocalBaseFolder localBaseFolder,
+        private async Task Download(string sourceName, InternalPackageInformation info, ILocalBaseFolder localBaseFolder,
             CancellationToken cancelationToken)
         {
             var sourceRepository = _sources[sourceName];
             
             var remoteV3FindPackageByIdResource = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancelationToken);
 
-            using (var stream = localBaseFolder.OpenStreamForWriting($@"{package.Id}\{package}.nupkg"))
+            using (var stream = localBaseFolder.OpenStreamForWriting($@"{info.OutputFolder}\{info.Identity}.nupkg"))
             {
-                await remoteV3FindPackageByIdResource.CopyNupkgToStreamAsync(package.Id, package.Version,
+                await remoteV3FindPackageByIdResource.CopyNupkgToStreamAsync(info.Identity.Id, info.Identity.Version,
                     stream,
                     _sourceCacheContext,
                     NullLogger.Instance, new CancellationToken()
                 );
             }
             
-            using (var stream = localBaseFolder.OpenStreamForReading($@"{package.Id}\{package}.nupkg"))
+            using (var stream = localBaseFolder.OpenStreamForReading($@"{info.OutputFolder}\{info.Identity}.nupkg"))
             using (var compressed = new ZipArchive(stream, ZipArchiveMode.Read))
             {
                 foreach (var zipArchiveEntry in compressed.Entries)
@@ -150,7 +153,7 @@ namespace NugetVendor
                     if (zipArchiveEntry.FullName.StartsWith("_rels") || zipArchiveEntry.Name == "[Content_Types].xml") continue;
                     
                     using (var fileStream = zipArchiveEntry.Open())
-                    using (var outputStream = localBaseFolder.OpenStreamForWriting($@"{package.Id}\{zipArchiveEntry}"))
+                    using (var outputStream = localBaseFolder.OpenStreamForWriting($@"{info.OutputFolder}\{zipArchiveEntry}"))
                     {
                         await fileStream.CopyToAsync(outputStream);
                     }
