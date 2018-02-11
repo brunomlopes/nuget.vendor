@@ -258,16 +258,19 @@ namespace NugetVendor.Resolver
             using (var compressed = new ZipArchive(stream, ZipArchiveMode.Read))
             {
                 var totalCount = compressed.Entries.Count;
+               
                 foreach (var (zipArchiveEntry, i) in compressed.Entries.Select((e, i) => (e, i)))
                 {
-                    listeners(new Decompressing(info.Package, info.Source, zipArchiveEntry.FullName, i, totalCount));
+                    var fullName = Uri.UnescapeDataString(zipArchiveEntry.FullName);
+                    var name = Uri.UnescapeDataString(zipArchiveEntry.Name);
+                    listeners(new Decompressing(info.Package, info.Source, fullName, i, totalCount));
 
-                    if (zipArchiveEntry.FullName.StartsWith("_rels") ||
-                        zipArchiveEntry.Name == "[Content_Types].xml") continue;
+                    if (fullName.StartsWith("_rels") ||
+                        name == "[Content_Types].xml") continue;
 
                     using (var fileStream = zipArchiveEntry.Open())
                     using (var outputStream =
-                        localBaseFolder.OpenStreamForWriting($@"{info.Package.OutputFolder}\{zipArchiveEntry}"))
+                        localBaseFolder.OpenStreamForWriting($@"{info.Package.OutputFolder}\{fullName}"))
                     {
                         await fileStream.CopyToAsync(outputStream);
                     }
