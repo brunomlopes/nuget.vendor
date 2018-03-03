@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using NugetVendor.Resolver.Events;
 using NugetVendor.VendorDependenciesReader;
 using NuGet.Common;
 using NuGet.Configuration;
@@ -16,92 +17,6 @@ using NuGet.Versioning;
 
 namespace NugetVendor.Resolver
 {
-    public abstract class EngineEvent
-    {
-    }
-
-    public interface IPackageEngineEvent
-    {
-        Package Package { get; set; }
-    }
-
-    public class AlreadyUpToDate : EngineEvent, IPackageEngineEvent
-    {
-        public AlreadyUpToDate(Package package)
-        {
-            Package = package;
-        }
-
-        public Package Package { get; set; }
-    }
-
-    public class Done : EngineEvent, IPackageEngineEvent
-    {
-        public Done(Package package)
-        {
-            Package = package;
-        }
-
-        public Package Package { get; set; }
-    }
-
-    public class Resolving : EngineEvent, IPackageEngineEvent
-    {
-        public Resolving(Package package, Source source)
-        {
-            Package = package;
-            Source = source;
-        }
-
-        public Package Package { get; set; }
-        public Source Source { get; set; }
-    }
-
-    public class Downloading : EngineEvent, IPackageEngineEvent
-    {
-        public Downloading(Package package, Source source)
-        {
-            Package = package;
-            Source = source;
-        }
-
-        public Package Package { get; set; }
-        public Source Source { get; set; }
-    }
-
-    public class Downloaded : EngineEvent, IPackageEngineEvent
-    {
-        public Downloaded(Package package, Source source)
-        {
-            Package = package;
-            Source = source;
-        }
-
-        public Package Package { get; set; }
-        public Source Source { get; set; }
-    }
-
-    public class Decompressing : EngineEvent, IPackageEngineEvent
-    {
-        public Decompressing(Package package, Source source, string file, int current, int totalCount)
-        {
-            Package = package;
-            Source = source;
-            File = file;
-            Current = current;
-            TotalCount = totalCount;
-        }
-
-        public Package Package { get; set; }
-        public Source Source { get; set; }
-        public string File { get; set; }
-        public int Current { get; set; }
-        public int TotalCount { get; set; }
-    }
-
-
-    public delegate void EngineEventListener(EngineEvent evt);
-
     public class ResolveEngine
     {
         private ParsedVendorDependencies _vendorDependencies;
@@ -117,6 +32,7 @@ namespace NugetVendor.Resolver
             _providers = Repository
                 .Provider
                 .GetCoreV3()
+                .Where(t => !(t.Value is HttpFileSystemBasedFindPackageByIdResourceProvider))
                 .ToList();
         }
 
@@ -168,10 +84,10 @@ namespace NugetVendor.Resolver
         {
             var cancelationToken = new CancellationToken();
             var runningTasks = _packageIdentitiesBySourceName
-                .AsParallel()
                 .Select(group => DownloadVendorsFromSourceName(localBaseFolder, group, cancelationToken));
 
             await Task.WhenAll(runningTasks);
+            listeners(new AllDone());
         }
 
         private async Task DownloadVendorsFromSourceName(ILocalBaseFolder localBaseFolder,
@@ -237,22 +153,34 @@ namespace NugetVendor.Resolver
             listeners(new Resolving(info.Package, info.Source));
             var sourceRepository = _sourceRepositories[sourceName];
 
+            // This makes it work with coreclr
+            _sourceCacheContext.DirectDownload = true;
+            _sourceCacheContext.RefreshMemoryCache = true;
+
             var remoteV3FindPackageByIdResource =
                 await sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancelationToken);
-
+            await remoteV3FindPackageByIdResource.GetAllVersionsAsync(info.Identity.Id, _sourceCacheContext,
+                NullLogger.Instance, cancelationToken);
             using (var stream =
                 localBaseFolder.OpenStreamForWriting($@"{info.Package.OutputFolder}\{info.Identity}.nupkg"))
             {
                 listeners(new Downloading(info.Package, info.Source));
-
-                await remoteV3FindPackageByIdResource.CopyNupkgToStreamAsync(info.Identity.Id, info.Identity.Version,
+                var result = await remoteV3FindPackageByIdResource.CopyNupkgToStreamAsync(info.Identity.Id, info.Identity.Version,
                     stream,
                     _sourceCacheContext,
-                    NullLogger.Instance, new CancellationToken()
+                    NullLogger.Instance, cancelationToken
                 );
+                if(result != true) throw new InvalidOperationException("Whoa, result is null");
                 listeners(new Downloaded(info.Package, info.Source));
             }
 
+            await Decompress(info, localBaseFolder);
+
+            listeners(new Done(info.Package));
+        }
+
+        private async Task Decompress(InternalPackageInformation info, ILocalBaseFolder localBaseFolder)
+        {
             using (var stream =
                 localBaseFolder.OpenStreamForReading($@"{info.Package.OutputFolder}\{info.Identity}.nupkg"))
             using (var compressed = new ZipArchive(stream, ZipArchiveMode.Read))

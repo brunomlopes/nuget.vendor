@@ -77,7 +77,7 @@ namespace NugetVendor
                     engine.Listen(output.ResolveEngineEventListener);
 
                     engine.RunAsync(new LocalBaseFolder(folderFullPath)).Wait();
-                    output.AllDone();
+                    output.UiTask.Wait(TimeSpan.FromSeconds(1));
                 }
 
                 return 0;

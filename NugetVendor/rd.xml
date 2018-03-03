@@ -1,0 +1,12 @@
+﻿<Directives>
+    <Application>
+        <Assembly Name="NugetVendor" Dynamic="Required All" />
+
+        <Assembly Name="System.Linq.Expressions" Dynamic="Required All"  Browse="Required All" Serialize="Required All" XmlSerializer="Required All"  >
+          <Type Name="System.Linq.Expressions.ExpressionCreator`1[[System.Func`1[[System.Object, System.Private.CoreLib]], System.Private.CoreLib]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="System.Private.CoreLib">
+          <Type Name="System.Func`1[[System.Object, System.Private.CoreLib]]" Dynamic="Required All"/>
+        </Assembly>
+  </Application>
+</Directives>
