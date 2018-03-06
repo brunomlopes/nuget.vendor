@@ -8,5 +8,8 @@
         <Assembly Name="System.Private.CoreLib">
           <Type Name="System.Func`1[[System.Object, System.Private.CoreLib]]" Dynamic="Required All"/>
         </Assembly>
+        <Assembly Name="mscorlib">
+          <Type Name="System.ConsoleColor[]" Dynamic="Required All"/>
+        </Assembly>
   </Application>
 </Directives>

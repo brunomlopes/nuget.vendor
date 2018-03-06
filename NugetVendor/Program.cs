@@ -26,6 +26,10 @@ namespace NugetVendor
                 "--force", "Force refresh.",
                 CommandOptionType.NoValue);
 
+            CommandOption quiet = commandLineApplication.Option(
+                "--quiet", "quiet output",
+                CommandOptionType.NoValue);
+
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.OnExecute(() =>
             {
@@ -73,11 +77,15 @@ namespace NugetVendor
                         engine.ForceRefresh();
                     }
 
-                    RenderOutputFromEvents output = new RenderOutputFromEvents(parsedVendors);
-                    engine.Listen(output.ResolveEngineEventListener);
+                    RenderOutputFromEvents output = null;
+                    if(!quiet.HasValue())
+                    {
+                        output = new RenderOutputFromEvents(parsedVendors);
+                        engine.Listen(output.ResolveEngineEventListener);
+                    }
 
                     engine.RunAsync(new LocalBaseFolder(folderFullPath)).Wait();
-                    output.UiTask.Wait(TimeSpan.FromSeconds(1));
+                    output?.UiTask.Wait(TimeSpan.FromSeconds(1));
                 }
 
                 return 0;
