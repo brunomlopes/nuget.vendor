@@ -1,6 +1,8 @@
 # Nuget.Vendor
 Manage your tools and servers for a project via nugets. Simply and Quickly.
 
+[![Build status](https://ci.appveyor.com/api/projects/status/d7hn61tyh6i10f4c/branch/master?svg=true)](https://ci.appveyor.com/project/brunomlopes/nuget-vendor/branch/master)
+
 # How?
 
 Create a `vendors.txt` file containing nuget sources and dependencies:
