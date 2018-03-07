@@ -1,3 +1,4 @@
+$ErrorActionPreference = "Stop"
 
 mkdir local -force
 
@@ -8,3 +9,4 @@ Copy-Item .\NugetVendor\bin\Release\netcoreapp2.0\win-x64\publish\clrcompression
 dotnet publish -c Release -r win-x64
 
 Copy-Item  local\clrcompression.dll .\NugetVendor\bin\Release\netcoreapp2.0\win-x64\native\clrcompression.dll
+Compress-Archive -Path .\NugetVendor\bin\Release\netcoreapp2.0\win-x64\native\clrcompression.dll,.\NugetVendor\bin\Release\netcoreapp2.0\win-x64\native\NugetVendor.exe -DestinationPath .\local\NugetVendor.zip
