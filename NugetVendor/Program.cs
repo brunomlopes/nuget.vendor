@@ -60,7 +60,7 @@ namespace NugetVendor
 
                 Directory.CreateDirectory(folderFullPath);
 
-                Console.WriteLine($"Parsing '{vendorsFullPath}' into '{folderFullPath}'", Color.Green);
+                Console.WriteLine($"Taking dependencies from '{vendorsFullPath}' into '{folderFullPath}'", Color.Green);
                 using (var input = File.OpenText(vendorsFullPath))
                 {
                     var parsedVendors = new VendorDependenciesReader.VendorDependenciesReader(input)
