@@ -57,6 +57,9 @@ namespace NugetVendor.Output
                     case Downloading downloading:
                         Console.Write("Downloading ", Color.Yellow);
                         Console.Write($"(from {downloading.Source.Name})          ", Color.Yellow);
+                        break;                    
+                    case Cleaning cleaning:
+                        Console.Write($"Cleaning path {cleaning.FolderName}       ", Color.Yellow);
                         break;
                     case Downloaded downloaded:
                         Console.Write("Downloaded                                 ", Color.Green);

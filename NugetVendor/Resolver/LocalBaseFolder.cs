@@ -43,5 +43,20 @@ namespace NugetVendor.Resolver
             var fullPath = Path.Combine(_baseDir.FullName, filePath);
             return File.OpenRead(fullPath);
         }
+
+        public void Clean(string folderName)
+        {
+            var fullPath = Path.Combine(_baseDir.FullName, folderName);
+            var dir = new DirectoryInfo(fullPath);
+            foreach (var f in dir.EnumerateFiles().Where(f => !f.Extension.Equals(".nupkg", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                f.Delete();
+            }
+
+            foreach (var subdir in dir.EnumerateDirectories())
+            {
+                subdir.Delete(true);
+            }
+        }
     }
 }

@@ -63,17 +63,32 @@ namespace NugetVendor.VendorDependenciesReader
             from outputFolder in PackageIdentifier.Token().Text()
             select outputFolder;
 
+        private static readonly Parser<bool> MarkCleanOnUpdate = Parse.String("clean").Token().Return(true);
+
+        private static readonly Parser<(string outputPath, bool markCleanOnUpdate)> OptionalSufixes =
+            Parse.Or(
+                from markCleanOnUpdate in MarkCleanOnUpdate
+                from optional in ExplicitOutputFolder.Optional()
+                select (optional.GetOrDefault(), markCleanOnUpdate)
+                ,
+                from optional in ExplicitOutputFolder.Optional()
+                from markCleanOnUpdate in MarkCleanOnUpdate.Optional()
+                select (optional.GetOrDefault(), markCleanOnUpdate.GetOrDefault())
+            );
+
         private static readonly Parser<Package> PackageParser =
             from name in SourceName
             from id in PackageIdentifier
             from version in Version
-            from optional in ExplicitOutputFolder.Optional()
+            from optionalSuffixes in OptionalSufixes
+            
             select new Package
             {
                 SourceName = name,
                 PackageId = id,
                 PackageVersion = version,
-                OutputFolder = optional.GetOrDefault() ?? id
+                OutputFolder = optionalSuffixes.outputPath ?? id,
+                CleanOnUpdate = optionalSuffixes.markCleanOnUpdate
             };
 
         private static readonly Parser<string> Comment

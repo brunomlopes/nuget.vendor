@@ -166,6 +166,47 @@ proget InnovationCast.Analyzers 1.0.0.12
             _parsedVendor.Packages.Select(s => s.PackageVersion).ShouldContain(version => version == "1.0.0.12");
         }
 
+        [Fact]
+        public void CanMarkPackageAsCleanOnUpdate()
+        {
+            Parse(@"
+proget InnovationCast.Analyzers 1.0.0.12 clean
+");
+
+            _parsedVendor.Packages.First()?.CleanOnUpdate.ShouldBe(true);
+        }
+
+        [Fact]
+        public void CanSetOutputFolderAndMarkPackageAsCleanOnUpdate()
+        {
+            Parse(@"
+proget InnovationCast.Analyzers 1.0.0.12 into analyzers clean
+");
+
+            _parsedVendor.Packages.First()?.OutputFolder.ShouldBe("analyzers");
+            _parsedVendor.Packages.First()?.CleanOnUpdate.ShouldBe(true);
+        }
+        [Fact]
+        public void CanMarkPackageAsCleanOnUpdateAndSetOutputFolder()
+        {
+            Parse(@"
+proget InnovationCast.Analyzers 1.0.0.12 clean into analyzers 
+");
+
+            _parsedVendor.Packages.First()?.OutputFolder.ShouldBe("analyzers");
+            _parsedVendor.Packages.First()?.CleanOnUpdate.ShouldBe(true);
+        }
+
+        [Fact]
+        public void ByDefaultPackagesAreNotMarkedToCleanOnUpdate()
+        {
+            Parse(@"
+proget InnovationCast.Analyzers 1.0.0.12 
+");
+
+            _parsedVendor.Packages.First()?.CleanOnUpdate.ShouldBe(false);
+        }
+
         private void Parse(string fileContent)
         {
             var reader = new VendorDependenciesReader.VendorDependenciesReader(new StringReader(fileContent));

@@ -10,5 +10,6 @@ namespace NugetVendor.Resolver
         Task<string> FileContentOrEmptyAsync(string filePath, CancellationToken cancelationToken);
         Stream OpenStreamForWriting(string path);
         Stream OpenStreamForReading(string path);
+        void Clean(string folderName);
     }
 }

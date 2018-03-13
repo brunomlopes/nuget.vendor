@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
@@ -174,6 +175,13 @@ namespace NugetVendor.Resolver
                 listeners(new Downloaded(info.Package, info.Source));
             }
 
+            if (info.Package.CleanOnUpdate)
+            {
+                listeners(new Cleaning(info.Package, info.Package.OutputFolder));
+
+                localBaseFolder.Clean(info.Package.OutputFolder);
+                
+            }
             await Decompress(info, localBaseFolder);
 
             listeners(new Done(info.Package));

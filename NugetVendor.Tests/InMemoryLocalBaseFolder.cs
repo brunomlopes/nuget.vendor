@@ -80,5 +80,11 @@ namespace NugetVendor.Tests
             }
             return new MemoryStream(now.Files[fileName]);
         }
+
+        public void Clean(string folderName)
+        {
+            // TODO implement clean except .nupkg
+            throw new System.NotImplementedException();
+        }
     }
 }
