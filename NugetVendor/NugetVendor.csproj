@@ -13,8 +13,11 @@
     <PackageReference Include="Colorful.Console" Version="1.2.6" />
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-26223-02" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.0.1" />
     <PackageReference Include="NuGet.Client" Version="4.2.0" />
     <PackageReference Include="NuGet.Protocol" Version="4.6.0" />
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="1.1.0" />
     <PackageReference Include="Sprache" Version="2.1.2" />
   </ItemGroup>
 </Project>

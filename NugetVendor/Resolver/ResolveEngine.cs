@@ -1,25 +1,27 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using NugetVendor.Resolver.Events;
 using NugetVendor.VendorDependenciesReader;
-using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using NullLogger = NuGet.Common.NullLogger;
 
 namespace NugetVendor.Resolver
 {
     public class ResolveEngine
     {
+        private readonly ILogger<ResolveEngine> _log;
         private ParsedVendorDependencies _vendorDependencies;
         private readonly List<Lazy<INuGetResourceProvider>> _providers;
         private Dictionary<string, SourceRepository> _sourceRepositories;
@@ -29,7 +31,13 @@ namespace NugetVendor.Resolver
         private bool _forceRefresh;
 
         public ResolveEngine()
+            : this(NullLogger<ResolveEngine>.Instance)
         {
+        }
+
+        public ResolveEngine(ILogger<ResolveEngine> log)
+        {
+            _log = log;
             _providers = Repository
                 .Provider
                 .GetCoreV3()
@@ -86,7 +94,8 @@ namespace NugetVendor.Resolver
             var cancelationToken = new CancellationToken();
             var runningTasks = _packageIdentitiesBySourceName
                 .Select(group => DownloadVendorsFromSourceName(localBaseFolder, group, cancelationToken));
-
+            
+            _log.LogDebug("Waiting for dependencies to finish");
             await Task.WhenAll(runningTasks);
             listeners(new AllDone());
         }

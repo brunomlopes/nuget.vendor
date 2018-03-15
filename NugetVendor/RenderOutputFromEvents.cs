@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using NugetVendor.Output;
 using NugetVendor.Resolver;
 using NugetVendor.Resolver.Events;
@@ -11,16 +12,18 @@ namespace NugetVendor
 {
     class RenderOutputFromEvents
     {
+        private readonly ILogger _log;
         private readonly CancellationToken _uiTaskToken;
         private readonly BlockingCollection<EngineEvent> _queue;
         private readonly CancellationTokenSource _uiTaskTokenSource;
         public Task UiTask { get; }
 
-        public RenderOutputFromEvents(ParsedVendorDependencies deps)
+        public RenderOutputFromEvents(ParsedVendorDependencies deps, ILogger log)
         {
+            _log = log;
             var renderer = Console.IsOutputRedirected
                 ? (IRenderEvent) new SimpleRender(deps)
-                : new PrettyRenderToConsole(deps);
+                : new PrettyRenderToConsole(deps, log);
 
             _queue = new BlockingCollection<EngineEvent>();
             _uiTaskTokenSource = new CancellationTokenSource();
@@ -30,10 +33,10 @@ namespace NugetVendor
                 while (!_uiTaskToken.IsCancellationRequested)
                 {
                     var evt = _queue.Take(_uiTaskToken);
-                    if (_uiTaskToken.IsCancellationRequested) return;
+                    log.LogDebug("Rendering {evt}", evt.GetType());
                     renderer.Render(evt);
 
-                    if (evt is AllDone )
+                    if (evt is AllDone)
                     {
                         _uiTaskTokenSource.Cancel();
                     }

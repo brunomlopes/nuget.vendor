@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO;
 using Microsoft.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Logging;
 using NugetVendor.Resolver;
 using Console = Colorful.Console;
 
@@ -11,6 +12,11 @@ namespace NugetVendor
     {
         static void Main(string[] args)
         {
+            #if DEBUG
+            ILoggerFactory loggerFactory = new LoggerFactory()
+                .AddFile("log.txt", LogLevel.Trace);
+            #endif 
+
             CommandLineApplication commandLineApplication =
                 new CommandLineApplication(throwOnUnexpectedArg: false);
             
@@ -68,7 +74,7 @@ namespace NugetVendor
                         .Result;
                     parsedVendors.Validate();
 
-                    var engine = new ResolveEngine().Initialize(parsedVendors);
+                    var engine = new ResolveEngine(loggerFactory.CreateLogger<ResolveEngine>()).Initialize(parsedVendors);
 
                     if (forceRefreshCommand.HasValue())
                     {
@@ -80,7 +86,7 @@ namespace NugetVendor
                     RenderOutputFromEvents output = null;
                     if(!quiet.HasValue())
                     {
-                        output = new RenderOutputFromEvents(parsedVendors);
+                        output = new RenderOutputFromEvents(parsedVendors, loggerFactory.CreateLogger<RenderOutputFromEvents>());
                         engine.Listen(output.ResolveEngineEventListener);
                     }
 
