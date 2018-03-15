@@ -12,9 +12,10 @@ namespace NugetVendor
     {
         static void Main(string[] args)
         {
+            ILoggerFactory loggerFactory = new LoggerFactory();
+
             #if DEBUG
-            ILoggerFactory loggerFactory = new LoggerFactory()
-                .AddFile("log.txt", LogLevel.Trace);
+            loggerFactory.AddFile("log.txt", LogLevel.Trace);
             #endif 
 
             CommandLineApplication commandLineApplication =
