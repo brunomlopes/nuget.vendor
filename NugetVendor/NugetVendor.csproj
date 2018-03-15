@@ -10,11 +10,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Colorful.Console" Version="1.2.2" />
+    <PackageReference Include="Colorful.Console" Version="1.2.6" />
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-26223-02" />
-    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
     <PackageReference Include="NuGet.Client" Version="4.2.0" />
-    <PackageReference Include="NuGet.Protocol" Version="4.5.0" />
+    <PackageReference Include="NuGet.Protocol" Version="4.6.0" />
     <PackageReference Include="Sprache" Version="2.1.2" />
   </ItemGroup>
 </Project>
