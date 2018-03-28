@@ -21,6 +21,7 @@ namespace NugetVendor.Resolver
 {
     public class ResolveEngine
     {
+        private const int FolderBitmaskForZipArchiveEntry = 0x10;
         private readonly ILogger<ResolveEngine> _log;
         private ParsedVendorDependencies _vendorDependencies;
         private readonly List<Lazy<INuGetResourceProvider>> _providers;
@@ -212,6 +213,8 @@ namespace NugetVendor.Resolver
 
                     if (fullName.StartsWith("_rels") ||
                         name == "[Content_Types].xml") continue;
+                    // we skip over directory entries for now, assume we don't extract empty dirs
+                    if ((zipArchiveEntry.ExternalAttributes & FolderBitmaskForZipArchiveEntry) == FolderBitmaskForZipArchiveEntry) continue;
 
                     using (var fileStream = zipArchiveEntry.Open())
                     using (var outputStream =
