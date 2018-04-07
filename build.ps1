@@ -3,19 +3,19 @@ $ErrorActionPreference = "Stop"
 $rid = "win-x64"
 
 if (-not (Test-Path local)) {
-    New-Item local -force
+    new-item local -ItemType Directory -Force
 }
 
 dotnet publish -c Release -r $rid /p:NativeCompilationDuringPublish=false 
 
 if($rid -eq "win-x64"){
-    Copy-Item ".\NugetVendor\bin\Release\netcoreapp2.0\$rid\publish\clrcompression.dll" local\clrcompression.dll -Verbose
+    Copy-Item ".\NugetVendor\bin\Release\netcoreapp2.0\$rid\publish\clrcompression.dll" local\clrcompression.dll -Verbose -Force
 }
 
 dotnet publish -c Release -r $rid
 
 if($rid -eq "win-x64"){
-    Copy-Item  local\clrcompression.dll ".\NugetVendor\bin\Release\netcoreapp2.0\$rid\native\clrcompression.dll" -Verbose
+    Copy-Item  local\clrcompression.dll ".\NugetVendor\bin\Release\netcoreapp2.0\$rid\native\clrcompression.dll" -Verbose -Force
 }
 
 $archive_files = @()
