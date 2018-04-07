@@ -16,6 +16,7 @@ using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using NullLogger = NuGet.Common.NullLogger;
+using System.IO;
 
 namespace NugetVendor.Resolver
 {
@@ -173,7 +174,7 @@ namespace NugetVendor.Resolver
             await remoteV3FindPackageByIdResource.GetAllVersionsAsync(info.Identity.Id, _sourceCacheContext,
                 NullLogger.Instance, cancelationToken);
             using (var stream =
-                localBaseFolder.OpenStreamForWriting($@"{info.Package.OutputFolder}\{info.Identity}.nupkg"))
+                localBaseFolder.OpenStreamForWriting(PathForNugetPackage(info)))
             {
                 listeners(new Downloading(info.Package, info.Source));
                 var result = await remoteV3FindPackageByIdResource.CopyNupkgToStreamAsync(info.Identity.Id, info.Identity.Version,
@@ -181,7 +182,7 @@ namespace NugetVendor.Resolver
                     _sourceCacheContext,
                     NullLogger.Instance, cancelationToken
                 );
-                if(result != true) throw new InvalidOperationException("Whoa, result is null");
+                if (result != true) throw new InvalidOperationException("Whoa, result is null");
                 listeners(new Downloaded(info.Package, info.Source));
             }
 
@@ -190,17 +191,22 @@ namespace NugetVendor.Resolver
                 listeners(new Cleaning(info.Package, info.Package.OutputFolder));
 
                 localBaseFolder.Clean(info.Package.OutputFolder);
-                
+
             }
             await Decompress(info, localBaseFolder);
 
             listeners(new Done(info.Package));
         }
 
+        private static string PathForNugetPackage(InternalPackageInformation info)
+        {
+            return $"{Path.Combine(info.Package.OutputFolder, info.Identity.ToString())}.nupkg";
+        }
+
         private async Task Decompress(InternalPackageInformation info, ILocalBaseFolder localBaseFolder)
         {
             using (var stream =
-                localBaseFolder.OpenStreamForReading($@"{info.Package.OutputFolder}\{info.Identity}.nupkg"))
+                localBaseFolder.OpenStreamForReading(PathForNugetPackage(info)))
             using (var compressed = new ZipArchive(stream, ZipArchiveMode.Read))
             {
                 var totalCount = compressed.Entries.Count;
@@ -218,7 +224,7 @@ namespace NugetVendor.Resolver
 
                     using (var fileStream = zipArchiveEntry.Open())
                     using (var outputStream =
-                        localBaseFolder.OpenStreamForWriting($@"{info.Package.OutputFolder}\{fullName}"))
+                        localBaseFolder.OpenStreamForWriting(Path.Combine(info.Package.OutputFolder, fullName)))
                     {
                         await fileStream.CopyToAsync(outputStream);
                     }
