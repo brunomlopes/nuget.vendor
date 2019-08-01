@@ -23,7 +23,7 @@ namespace NugetVendor.VendorDependenciesReader
             Parse.Letter.Or(Parse.Chars(sourceNameExtraChars))
                 .AtLeastOnce().Text().Token();
 
-        private static char[] urlExtraChars = "://.-_?@&".Select(c => c).ToArray();
+        private static char[] urlExtraChars = "://\\.-_?@&".Select(c => c).ToArray();
 
         private static readonly Parser<string> Url =
             Parse.LetterOrDigit.Or(Parse.Chars(urlExtraChars))

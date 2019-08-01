@@ -119,6 +119,24 @@ proget InnovationCast.Analyzers 1.0.0.12 # this is another comment
             
         }
 
+        [Fact]
+        public void SupportsLocalSource()
+        {
+            Parse(@"
+source local-nuget D:\temp\nugets 
+
+local-nuget nodejs 10.16.1-with-gulp-jspm clean
+");
+            
+            _parsedVendor.Sources.Select(s => s.Name).ShouldContain(name => name == "local-nuget");
+            _parsedVendor.Sources.Select(s => s.Url).ShouldContain(url => url == @"D:\temp\nugets");
+
+            _parsedVendor.Packages.Select(s => s.SourceName).ShouldContain(name => name == "local-nuget");
+            _parsedVendor.Packages.Select(s => s.PackageId).ShouldContain(url => url == "nodejs");
+            _parsedVendor.Packages.Select(s => s.PackageVersion).ShouldContain(version => version == "10.16.1-with-gulp-jspm");
+            
+        }
+
 
         [Fact]
         public void PackageMustReferenceAnExistingSource()

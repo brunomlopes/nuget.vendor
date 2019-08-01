@@ -68,6 +68,33 @@ proget InnovationCast.Analyzers 1.0.0.12 into other
         }
 
         [Fact]
+        public async Task CanFetchFromLocalFolder()
+        {
+            
+            Parse(@"
+source local-nuget D:\temp\nugets 
+
+local-nuget InnovationCast.Analyzers 1.0.0.154 into other
+");
+
+            var e = new ResolveEngine();
+            e.Initialize(_parsedVendor);
+            var inMemoryLocalBaseFolder = new InMemoryLocalBaseFolder();
+            await e.RunAsync(inMemoryLocalBaseFolder);
+
+            var content = await inMemoryLocalBaseFolder.FileContentOrEmptyAsync(
+                @"other\vendor.dependency.description.json", new CancellationToken());
+
+            content.ShouldNotBeNullOrWhiteSpace();
+            JsonConvert.DeserializeObject<SomethingWithVersion>(content).Version.ShouldBe("1.0.0.154");
+
+            inMemoryLocalBaseFolder.ContainsPath(@"other\InnovationCast.Analyzers.1.0.0.154.nupkg").ShouldBeTrue();
+            inMemoryLocalBaseFolder.ContainsPath(@"other\tools\install.ps1").ShouldBeTrue();
+            inMemoryLocalBaseFolder.ContainsPath(@"other\_rels\.rels").ShouldBeFalse("Skip internal nuget folders");
+            inMemoryLocalBaseFolder.ContainsPath(@"other\[Content_Types].xml").ShouldBeFalse("Skip internal nuget folders");
+        }
+
+        [Fact]
         public async Task FullTest()
         {
             Parse(@"
