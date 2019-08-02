@@ -5,8 +5,8 @@ $rid = "win-x64"
 if (-not (Test-Path local)) {
     new-item local -ItemType Directory -Force
 }
-
-dotnet publish -c Release -r $rid /p:NativeCompilationDuringPublish=false 
+dotnet restore
+dotnet publish -c Release -r $rid /p:NativeCompilationDuringPublish=false /p:CoreRT=false
 
 if($rid -eq "win-x64"){
     Copy-Item ".\NugetVendor\bin\Release\netcoreapp2.2\$rid\publish\clrcompression.dll" local\clrcompression.dll -Verbose -Force

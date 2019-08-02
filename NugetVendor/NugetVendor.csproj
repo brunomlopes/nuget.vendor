@@ -7,12 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RdXmlFile Include="rd.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Colorful.Console" Version="1.2.6" />
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-27527-01" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.0.1" />
@@ -22,7 +17,14 @@
     <PackageReference Include="Sprache" Version="2.1.2" />
   </ItemGroup>
 
-  <Target Name="CopyClrCompressionDll" AfterTargets="Publish">
+  <ItemGroup Condition="'$(CoreRT)' != 'false'">
+    <RdXmlFile Include="rd.xml" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-27527-01" />
+  </ItemGroup>
+
+  <Target Condition="'$(CoreRT)' != 'false'" Name="CopyClrCompressionDll" AfterTargets="Publish">
     <Copy SourceFiles="$(IlcPath)\framework\clrcompression.dll" DestinationFolder="$(PublishDir)" />
   </Target>
+
+
 </Project>
