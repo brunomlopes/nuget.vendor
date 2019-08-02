@@ -18,12 +18,9 @@ namespace NugetVendor
         private readonly CancellationTokenSource _uiTaskTokenSource;
         public Task UiTask { get; }
 
-        public RenderOutputFromEvents(ParsedVendorDependencies deps, ILogger log)
+        public RenderOutputFromEvents(IRenderEvent renderer, ILogger log)
         {
             _log = log;
-            var renderer = Console.IsOutputRedirected
-                ? (IRenderEvent) new SimpleRender(deps)
-                : new PrettyRenderToConsole(deps, log);
 
             _queue = new BlockingCollection<EngineEvent>();
             _uiTaskTokenSource = new CancellationTokenSource();

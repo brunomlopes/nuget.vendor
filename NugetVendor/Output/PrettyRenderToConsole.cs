@@ -13,7 +13,7 @@ namespace NugetVendor.Output
     internal class PrettyRenderToConsole : IRenderEvent
     {
         private readonly ILogger _log;
-        private (int left, int top) _start;
+        private readonly (int left, int top) _start;
         private readonly ImmutableDictionary<Package, int> _linePerPackage;
         
         private const int TopMarginPerPackage = 1;
