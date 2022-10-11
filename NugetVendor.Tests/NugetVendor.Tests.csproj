@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.1" />
     <PackageReference Include="NuGet.Client" Version="4.2.0" />
-    <PackageReference Include="NuGet.Protocol" Version="4.6.0" />
+    <PackageReference Include="NuGet.Protocol" Version="4.9.6+a32bce39889f724fbd11cfd12e946f802168b583" />
     <PackageReference Include="shouldly" Version="3.0.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
