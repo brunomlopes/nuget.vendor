@@ -40,6 +40,7 @@ namespace NugetVendor.Resolver
         public ResolveEngine(ILogger<ResolveEngine> log)
         {
             _log = log;
+            _nugetLog = new LoggerAdapter(log);
             _providers = Repository
                 .Provider
                 .GetCoreV3()
@@ -48,6 +49,7 @@ namespace NugetVendor.Resolver
         }
 
         private EngineEventListener listeners = evt => { };
+        private readonly LoggerAdapter _nugetLog;
 
         public ResolveEngine Listen(EngineEventListener listener)
         {
@@ -94,6 +96,7 @@ namespace NugetVendor.Resolver
         public async Task RunAsync(ILocalBaseFolder localBaseFolder)
         {
             var cancelationToken = new CancellationToken();
+
             var runningTasks = _packageIdentitiesBySourceName
                 .Select(group => DownloadVendorsFromSourceName(localBaseFolder, group, cancelationToken));
             
@@ -168,21 +171,31 @@ namespace NugetVendor.Resolver
             // This makes it work with coreclr
             _sourceCacheContext.DirectDownload = true;
             _sourceCacheContext.RefreshMemoryCache = true;
-
+            
             var remoteV3FindPackageByIdResource =
                 await sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancelationToken);
             await remoteV3FindPackageByIdResource.GetAllVersionsAsync(info.Identity.Id, _sourceCacheContext,
-                NullLogger.Instance, cancelationToken);
-            using (var stream =
-                localBaseFolder.OpenStreamForWriting(PathForNugetPackage(info)))
+                _nugetLog, cancelationToken);
+            await using (var stream =
+                         localBaseFolder.OpenStreamForWriting(PathForNugetPackage(info)))
             {
                 listeners(new Downloading(info.Package, info.Source));
+                
+                
                 var result = await remoteV3FindPackageByIdResource.CopyNupkgToStreamAsync(info.Identity.Id, info.Identity.Version,
                     stream,
                     _sourceCacheContext,
-                    NullLogger.Instance, cancelationToken
+                    _nugetLog, cancelationToken
                 );
-                if (result != true) throw new InvalidOperationException("Whoa, result is null");
+                if (result != true)
+                {
+                    if (!await remoteV3FindPackageByIdResource.DoesPackageExistAsync(info.Identity.Id,
+                            info.Identity.Version, _sourceCacheContext, _nugetLog, cancelationToken))
+                    {
+                        throw new InvalidOperationException($"Package '{info.Identity.Id}' version '{info.Identity.Version}' does not exist on '{sourceName}'");
+                    };
+                    throw new InvalidOperationException("Whoa, result is null");
+                }
                 listeners(new Downloaded(info.Package, info.Source));
             }
 

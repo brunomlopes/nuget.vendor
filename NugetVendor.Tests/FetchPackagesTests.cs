@@ -70,11 +70,11 @@ proget InnovationCast.Analyzers 1.0.0.12 into other
         [Fact]
         public async Task CanFetchFromLocalFolder()
         {
-            
+            // Download https://proget.innovationcast.org/nuget/ic-public/package/InnovationCast.Analyzers/1.0.0.12 and put it in d:\temp\nugets
             Parse(@"
 source local-nuget D:\temp\nugets 
 
-local-nuget InnovationCast.Analyzers 1.0.0.154 into other
+local-nuget InnovationCast.Analyzers 1.0.0.12 into other
 ");
 
             var e = new ResolveEngine();
@@ -86,9 +86,9 @@ local-nuget InnovationCast.Analyzers 1.0.0.154 into other
                 @"other\vendor.dependency.description.json", new CancellationToken());
 
             content.ShouldNotBeNullOrWhiteSpace();
-            JsonConvert.DeserializeObject<SomethingWithVersion>(content).Version.ShouldBe("1.0.0.154");
+            JsonConvert.DeserializeObject<SomethingWithVersion>(content).Version.ShouldBe("1.0.0.12");
 
-            inMemoryLocalBaseFolder.ContainsPath(@"other\InnovationCast.Analyzers.1.0.0.154.nupkg").ShouldBeTrue();
+            inMemoryLocalBaseFolder.ContainsPath(@"other\InnovationCast.Analyzers.1.0.0.12.nupkg").ShouldBeTrue();
             inMemoryLocalBaseFolder.ContainsPath(@"other\tools\install.ps1").ShouldBeTrue();
             inMemoryLocalBaseFolder.ContainsPath(@"other\_rels\.rels").ShouldBeFalse("Skip internal nuget folders");
             inMemoryLocalBaseFolder.ContainsPath(@"other\[Content_Types].xml").ShouldBeFalse("Skip internal nuget folders");
@@ -98,7 +98,7 @@ local-nuget InnovationCast.Analyzers 1.0.0.154 into other
         public async Task FullTest()
         {
             Parse(@"
-source proget https://proget.hq.welisten.eu/nuget/ic-public/
+source proget https://proget.innovationcast.org/nuget/ic-public/
 source nuget https://api.nuget.org/v3/index.json
 
 proget PostgreSQL.Server 9.3.4.3
@@ -107,6 +107,37 @@ proget nodejs 4.4.2
 nuget Npgsql 3.1.7
 nuget Redis-64 2.8.4
 nuget RavenDB.Server 3.5.5-patch-35246
+");
+
+            var e = new ResolveEngine();
+            e.Initialize(_parsedVendor);
+            var inMemoryLocalBaseFolder = new InMemoryLocalBaseFolder();
+            await e.RunAsync(inMemoryLocalBaseFolder);
+        }
+
+        [Fact]
+        public async Task FullTestPostres()
+        {
+            Parse(@"
+source proget https://proget.innovationcast.org/nuget/ic-public/
+
+proget PostgreSQL.Server 9.3.4.3
+");
+
+            var e = new ResolveEngine();
+            e.Initialize(_parsedVendor);
+            var inMemoryLocalBaseFolder = new InMemoryLocalBaseFolder();
+            await e.RunAsync(inMemoryLocalBaseFolder);
+        }
+
+        [Fact]
+        public async Task FullTestNode()
+        {
+            Parse(@"
+source proget https://proget.innovationcast.org/nuget/ic-public/
+
+proget nodejs 4.4.2
+
 ");
 
             var e = new ResolveEngine();
