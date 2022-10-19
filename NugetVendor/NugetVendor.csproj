@@ -21,9 +21,4 @@
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-preview.2.22152.2" />
   </ItemGroup>
 
-  <Target Condition="'$(CoreRT)' != 'false'" Name="CopyClrCompressionDll" AfterTargets="Publish">
-    <Copy SourceFiles="$(IlcPath)\framework\clrcompression.dll" DestinationFolder="$(PublishDir)" />
-  </Target>
-
-
 </Project>

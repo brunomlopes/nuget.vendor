@@ -7,13 +7,9 @@ if (-not (Test-Path local)) {
 }
 dotnet restore
 
-dotnet publish -c Release -r $rid
+dotnet publish -c Release -r $rid --self-contained
 
 $archive_files = @()
-if($rid -eq "win-x64"){
-    $archive_files = @(".\NugetVendor\bin\Release\netcoreapp2.2\$rid\native\NugetVendor.exe",".\NugetVendor\bin\Release\netcoreapp2.2\$rid\publish\clrcompression.dll")
-}else{
-    $archive_files = @(".\NugetVendor\bin\Release\netcoreapp2.2\$rid\native\NugetVendor")
-}
+$archive_files = @(".\NugetVendor\bin\Release\net6.0\$rid\native\NugetVendor.exe")
 
 Compress-Archive -Path $archive_files -DestinationPath ".\local\NugetVendor.$rid.zip" -Force -Verbose
